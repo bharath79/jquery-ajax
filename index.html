@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login Captcha Form</title>
+    <link rel="stylesheet" type="text/css" href="loginform.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <style>
+
+    </style>
+    <h2>Modal Login Form</h2>
+    <!--Step 1 : Adding HTML-->
+    <button style="width:auto;" onclick="getAuthKey()">Login</button>
+
+    <div id="id01" class="modal">
+
+        <form class="modal-content animate">
+            <div class="imgcontainer">
+                <img src="assets/Final-logo-1.png" alt="Avatar" class="avatar" style="width:30vh;">
+            </div>
+
+            <div class="container">
+                <div id="loader">
+                    <img class="ad_image" src="./assets/loader.gif">
+                </div>
+                <div style="width: 100%;">
+                    <label>Username</label>
+                    <input type="text" name="email" placeholder="Enter your username">
+                    <br/>
+                    <label>Password</label>
+                    <input type="text" name="pwdw" placeholder="Enter your password">
+                </div>
+                <div>
+
+                </div>
+                <div id="unicorn_captcha">
+                    <div class="captcha-wrapper" id="render">
+                    </div>
+                    <p id="error"></p>
+                    <button type="button" onclick="validateCaptcha()" id="loginbtn">Login</button>
+                    <button type="button" id="loadinbtn">Loading...</button>
+                </div>
+
+            </div>
+            <div class="container cancel-content">
+                <button type="button" onclick="document.getElementById('id01').style.display='none'" class="cancelbtn">Close</button>
+            </div>
+        </form>
+
+    </div>
+</body>
+
+<script>
+    var token;
+
+    function makeid(length) {
+        var result = '';
+        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789*/-+#@^&=~`!%';
+        var charactersLength = characters.length;
+        for (var i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+    }
+
+    function getAuthKey() {
+        token = makeid(16);
+        var urlFetch = 'https://api.vystaar.in:8090/v1/captcha/fetch';
+        document.getElementById('id01').style.display = 'block';
+        $('#loader').show();
+        $('#unicorn_captcha').hide();
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'x-access-token': token,
+                'x-api-key': '2d209094-df08-4e46-89ab-e091bbaa6dbb',
+                'x-html-flag': true,
+                'x-referrer': 'www.adaptcaptcha.com'
+            },
+            crossDomain: true,
+            processData: true,
+            url: urlFetch,
+            success: function(json) {
+                if (json.captcha_base_converted != '') {
+                    $("#captchaImg").attr("src", json.captcha_base_converted);
+                } else {
+                    $('#captcha_container').hide();
+                }
+
+                $("#render").html(json.html).css({'height':'300px'});
+                // $("#link").attr("href", 'http://' + json.link);
+                $('#loader').hide();
+                $('#unicorn_captcha').show();
+                console.log(json)
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                alert(textStatus, errorThrown);
+                console.log(errorThrown);
+            }
+        });
+
+    }
+
+
+
+    function validateCaptcha(data) {
+        var text = $("#text-field").val();
+        if (text != '') {
+            $('#loadinbtn').show();
+            $('#loginbtn').hide();
+            var urlValid = 'https://api.vystaar.in:8090/v1/captcha/validate';
+            $.ajax({
+                type: 'GET',
+                dataType: 'json',
+                url: urlValid,
+                headers: {
+                    'x-access-token': token,
+                    'x-captcha-value': text
+                },
+                crossDomain: true,
+                processData: true,
+                success: function(json) {
+                    if (json.status == true) {
+                        alert('success');
+                    } else {
+                        getAuthKey();
+                        $('#error').html("Invalid Code");
+                    }
+                    $('#loadinbtn').hide();
+                    $('#loginbtn').show();
+                },
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    alert(textStatus, errorThrown);
+                    $('#loadinbtn').hide();
+                    $('#loginbtn').show();
+                    console.log(errorThrown);
+                }
+            });
+        } else {
+            alert('Please enter the text');
+        }
+    }
+
+    $(document).on("click", "INPUT[id^=text-field]", function(event) {
+        $('#error').html("");
+    });
+</script>
+
+</html>
